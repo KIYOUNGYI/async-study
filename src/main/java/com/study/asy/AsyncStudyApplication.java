@@ -24,6 +24,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter
 
 import java.util.Queue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -223,6 +224,50 @@ public class AsyncStudyApplication {
 
             return dr;
         }
+
+        @GetMapping("/rest10")
+        public DeferredResult<String> rest10(int idx) {
+
+            DeferredResult<String> dr = new DeferredResult<>();
+
+            toCF(asyncRestTemplate.getForEntity(URL1, String.class, "hi" + idx))
+                    .thenCompose(s -> toCF(asyncRestTemplate.getForEntity(URL2, String.class, s.getBody())))
+                    .thenCompose(s2 -> toCF(myService2.work(s2.getBody())))
+                    .thenAccept(s3 -> dr.setResult(s3))
+                    .exceptionally(e -> {
+                        dr.setErrorResult(e.getMessage());
+                        return (Void) null;
+                    });
+
+
+            return dr;
+        }
+
+        @GetMapping("/rest11")
+        public DeferredResult<String> rest11(int idx) {
+
+            DeferredResult<String> dr = new DeferredResult<>();
+
+            toCF(asyncRestTemplate.getForEntity(URL1, String.class, "hi" + idx))
+                    .thenCompose(s -> toCF(asyncRestTemplate.getForEntity(URL2, String.class, s.getBody())))
+                    .thenApplyAsync(s2 -> myService2.work2(s2.getBody()))
+                    .thenAccept(s3 -> dr.setResult(s3))
+                    .exceptionally(e -> {
+                        dr.setErrorResult(e.getMessage());
+                        return (Void) null;
+                    });
+
+
+            return dr;
+        }
+
+
+        <T> CompletableFuture<T> toCF(ListenableFuture<T> lf) {
+            CompletableFuture<T> cf = new CompletableFuture<T>();
+            lf.addCallback(s -> cf.complete(s), e -> cf.completeExceptionally(e));
+            return cf;
+        }
+
 
     }
 
@@ -493,6 +538,11 @@ public class AsyncStudyApplication {
         public ListenableFuture<String> work(String req) {
             return new AsyncResult<>(req + "/asyncwork");
         }
+
+        public String work2(String req2) {
+            return req2 + "/asnyc_work2";
+        }
+
     }
 
     @Bean

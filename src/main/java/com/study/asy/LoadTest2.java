@@ -31,7 +31,7 @@ public class LoadTest2 {
 
         ExecutorService es = Executors.newFixedThreadPool(100);
         RestTemplate rt = new RestTemplate();
-        String url = "http://localhost:8080/rest8?idx={idx}";
+        String url = "http://localhost:8080/rest11?idx={idx}";
 
         CyclicBarrier barrier = new CyclicBarrier(101);
 
