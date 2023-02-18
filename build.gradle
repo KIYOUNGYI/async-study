@@ -23,6 +23,12 @@ dependencies {
 	testImplementation('org.projectlombok:lombok')
 	annotationProcessor('org.projectlombok:lombok')
 	testAnnotationProcessor('org.projectlombok:lombok')
+
+	implementation group: 'javax.inject', name: 'javax.inject', version: '1'
+	implementation('org.apache.commons:commons-lang3:3.7')
+	// https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient
+	implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.13'
+
 }
 
 tasks.named('test') {

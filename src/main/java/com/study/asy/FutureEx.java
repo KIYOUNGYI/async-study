@@ -61,7 +61,7 @@ public class FutureEx {
         //새로 만드는 비용 cpu, memory 절약하자 (재사용해서)
         ExecutorService es = Executors.newCachedThreadPool();
 
-//        case2(es);
+        case2(es);
 
 //        case3(es);
 
@@ -79,7 +79,7 @@ public class FutureEx {
 
 //        case8(es);
 
-        case9(es);
+//        case9(es);
 
     }
 
@@ -170,12 +170,15 @@ public class FutureEx {
         log.info(String.valueOf(f.isDone()));
         Thread.sleep(2100);
 
-        log.info("Exit");//이걸 종료라 생각하지 말고 동시에 실행해야 할 작업이라 생각해보자
+        log.info("Exit (Other work)");//이걸 종료라 생각하지 말고 동시에 실행해야 할 작업이라 생각해보자
         //Exit -> Aync, Hello 이런 식으로 흘러가겠지
 
         log.info(String.valueOf(f.isDone()));//작업 끝나면 그 때 가져와~
 
         log.info(f.get());
+
+        es.awaitTermination(10L, TimeUnit.SECONDS);
+        es.shutdown();
     }
 
     /**
@@ -194,6 +197,9 @@ public class FutureEx {
         //Exit -> Aync, Hello 이런 식으로 흘러가겠지
 
         log.info(f.get());
+
+        es.awaitTermination(10L, TimeUnit.SECONDS);
+        es.shutdown();
     }
 
     /**
@@ -212,9 +218,12 @@ public class FutureEx {
 
         log.info(f.get());
         log.info("Exit");
+
+        es.awaitTermination(10L, TimeUnit.SECONDS);
+        es.shutdown();
     }
 
-    private static void case3(ExecutorService es) {
+    private static void case3(ExecutorService es) throws InterruptedException {
 
         es.submit(() -> {
             try {
@@ -226,17 +235,23 @@ public class FutureEx {
         });
 
         log.info("Exit");
+
+        es.awaitTermination(10L, TimeUnit.SECONDS);
+        es.shutdown();
     }
 
-    private static void case2(ExecutorService es) {
+    private static void case2(ExecutorService es) throws InterruptedException {
+
         es.execute(() -> {
             try {
-                Thread.sleep(2000);
+                Thread.sleep(3000);
             } catch (InterruptedException e) {
             }
             log.info("Async");
         });
 
         log.info("Exit");
+        es.awaitTermination(10L,TimeUnit.SECONDS);
+        es.shutdown();
     }
 }

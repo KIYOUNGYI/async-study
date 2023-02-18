@@ -1,6 +1,8 @@
 package com.study.asy;
 
+import com.study.asy.service.SlackService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +22,9 @@ public class RemoteService {
 
     @RestController
     public static class MyController {
+
+        @Autowired
+        SlackService slackService;
 
         @GetMapping("/service")
         public String service(String req) throws InterruptedException {

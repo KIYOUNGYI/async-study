@@ -1,13 +1,14 @@
 package com.study.asy;
 
-import io.netty.channel.nio.NioEventLoopGroup;
+import com.study.asy.advice.RestGlobalExceptionTarget;
+import com.study.asy.exception.BackOfficeCustomException;
+import com.study.asy.service.SlackService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.Netty4ClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -18,7 +19,6 @@ import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.AsyncRestTemplate;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.context.request.async.DeferredResult;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 
@@ -41,17 +41,23 @@ import java.util.function.Function;
 public class AsyncStudyApplication {
 
     @RestController
+    @RestGlobalExceptionTarget
     public static class MyController2 {
 
         @Autowired
         MyService2 myService2;
 
-        RestTemplate rt = new RestTemplate();
+        @Autowired
+        SlackService slackService;
 
+//        RestTemplate rt = new RestTemplate();
+
+        @Autowired
+        AsyncRestTemplate asyncRestTemplate;
         //spring 4 (뒷단 스레드 만듬)
 //        AsyncRestTemplate asyncRestTemplate = new AsyncRestTemplate();
         //
-        AsyncRestTemplate asyncRestTemplate = new AsyncRestTemplate(new Netty4ClientHttpRequestFactory(new NioEventLoopGroup(1)));
+//        AsyncRestTemplate asyncRestTemplate = new AsyncRestTemplate(new Netty4ClientHttpRequestFactory(new NioEventLoopGroup(1)));
 
 
         @GetMapping("/rest")
@@ -62,7 +68,7 @@ public class AsyncStudyApplication {
         @GetMapping("/rest2")
         public String rest2(int idx) {
 
-            String res = rt.getForObject("http://localhost:8082/service?req={req}", String.class, "hello" + idx);
+//            String res = rt.getForObject("http://localhost:8082/service?req={req}", String.class, "hello" + idx);
             //스레드 개수 1개로 제한했는데, 첫번째 요청이 들어와서 2초가 딱 걸리는 이 작업을 수행하는 동안
             //계속 대기 상태에 빠짐, 두번째 요청은 아이에 들어오지도 못함
             //cpu 상당히 놀고 있을거임, 서버는 요청 처리 못하고, (응답 기다리니까)
@@ -71,7 +77,8 @@ public class AsyncStudyApplication {
             //디퍼드 result 는 외부에서 결과가 만들어질 때 이루어지는 거고
             //노드개발자 : 스프링 블로킹 한다더라 (노노 스레드 2개여도 충분)
 
-            return res;
+//            return res;
+            return null;
         }
 
         @GetMapping("/rest3")
@@ -261,6 +268,37 @@ public class AsyncStudyApplication {
             return dr;
         }
 
+        @GetMapping("/test")
+        public void test(String title, String query) throws InterruptedException {
+            System.out.println("title = " + title + ", query = " + query);
+//            slackService.sendExceptionMessage(query, "test1");
+        }
+
+        @GetMapping("/test2")
+        public void test2(String title, String query) throws InterruptedException {
+            Thread.sleep(1000l);
+            System.out.println("title = " + title + ", query = " + query);
+//            slackService.sendExceptionMessage(query, "test1");
+        }
+
+        @Async
+        @GetMapping("/test3")
+        public void test3(String title,String query) throws InterruptedException {
+
+            int j = 0;
+            for(int i=1;i<100_000_000;i++){
+                j+=1;
+            }
+            System.out.println("j = " + j);
+            Thread.sleep(1000l);
+            throw new BackOfficeCustomException(400,title+"_"+query);
+        }
+
+        @GetMapping("/test4")
+        public String service3(String req, String message) throws InterruptedException {
+            slackService.asyncSendExceptionMessage(req, message);
+            return "ok";
+        }
 
         <T> CompletableFuture<T> toCF(ListenableFuture<T> lf) {
             CompletableFuture<T> cf = new CompletableFuture<T>();
@@ -545,20 +583,23 @@ public class AsyncStudyApplication {
 
     }
 
-    @Bean
-    public ThreadPoolTaskExecutor myThreadPool() {
-
-        //자바의 기본적인 스레드 풀 동작 원리 - queue 채우고 그 다음에 큐까지 다 찼을 때
-        //maxpoolsize 까지 스레드를 더 늘렸다가 그것까지 다 차면 에러가 남
-
-        ThreadPoolTaskExecutor te = new ThreadPoolTaskExecutor();
-        te.setCorePoolSize(1);
-        te.setMaxPoolSize(1);
-        te.initialize();
-        ;
-        return te;
-
-    }
+    /**
+     * 만약 등록 안하면 자동으로 task-97
+     *
+     */
+//    @Bean
+//    public ThreadPoolTaskExecutor myThreadPool() {
+//
+//        //자바의 기본적인 스레드 풀 동작 원리 - queue 채우고 그 다음에 큐까지 다 찼을 때
+//        //maxpoolsize 까지 스레드를 더 늘렸다가 그것까지 다 차면 에러가 남
+//
+//        ThreadPoolTaskExecutor te = new ThreadPoolTaskExecutor();
+//        te.setCorePoolSize(1);
+//        te.setMaxPoolSize(1);
+//        te.initialize();
+//        return te;
+//
+//    }
 
 
     @RestController
